@@ -1,0 +1,62 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: example-runnerdeploy
+spec:
+  replicas: 1
+  template:
+    spec:
+      repository: sgandon/self-hosted-runner-test
+      image: artifactory.datapwn.com/docker-io-remote/summerwind/actions-runner-dind:v2.299.1-ubuntu-20.04-aa6dab5
+      imagePullSecrets:
+        - name: talend-registry
+      dockerEnabled: false
+      dockerRegistryMirror: https://docker-io-remote.cd.datapwn.com
+      dockerdWithinRunnerContainer: true
+      securityContext:
+        fsGroup: 1000
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "index.docker.io"
+        - "registry-1.docker.io"
+        - "docker.io"
+      volumeMounts:
+        - name: cache-runner
+          mountPath: /runner/_work
+        - name: cache-docker
+          mountPath: /home/runner/.docker
+        - name: cache-tools
+          mountPath: /opt/hostedtoolcache
+        - name: docker-conf-rw
+          mountPath: /home/runner/.docker/
+
+
+      initContainers:
+        - name: copy-docker-config
+          image: artifactory.datapwn.com/docker-io-remote/busybox:1.34.1
+          command:
+            - "sh"
+            - "-c"
+            - >
+              set -x;
+              cp /docker-conf-ro/config.json /docker-conf-rw/config.json;
+
+          volumeMounts:
+            - name: docker-conf-rw
+              mountPath: /docker-conf-rw
+            - name: github-actions-runner-registry
+              mountPath: /docker-conf-ro/config.json
+              subPath: .dockerconfigjson
+      volumes:
+        - name: cache-runner
+          emptyDir: {}
+        - name: cache-docker
+          emptyDir: {}
+        - name: cache-tools
+          emptyDir: {}
+        - name: docker-conf-rw
+          emptyDir: {}
+        - name: github-actions-runner-registry
+          secret:
+            secretName: mirror-registry

@@ -1,0 +1,32 @@
+name: Run helm tests
+
+    
+on:
+  workflow_dispatch:
+  push:
+
+
+
+jobs:
+  test-talend-mirror:
+    runs-on: [self-hosted]
+    steps:
+      - name: test mirror
+        run: docker pull alpine/helm:3.9.3
+      - name: Log into Artifactory
+        uses: docker/login-action@v2
+        with:
+          registry: https://artifactory.datapwn.com
+          username: sgandon
+          password: ${{ secrets.ARTIFACTORY_API_KEY }}
+      - name: test mirror2
+        run: docker pull alpine/helm:3.9.4
+      - name: test wait
+        run: sleep 60
+
+
+
+
+
+
+
