@@ -1,0 +1,82 @@
+name: Run helm tests
+
+env:
+    GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_DEFAULT_REGION: 'us-east-1'
+    LEIN_USERNAME: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    LEIN_PASSPHRASE: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    HELM_GIT_PATH: "stitch-observability-service"
+    CONFLUENT_PUBLIC_HELM_URL: "https://confluentinc.github.io/cp-helm-charts/"
+    BITNAMI_PUBLIC_HELM_URL: "https://charts.bitnami.com/bitnami"
+    ARTIFACTORY_HELM_URL: "https://artifactory.datapwn.com/artifactory/tlnd-helm-dev"
+    
+on:
+  workflow_dispatch:
+  push:
+
+
+jobs:
+  helm_test:
+    runs-on: [self-hosted]
+    steps:
+      - name: Log to Artifactory
+        uses: docker/login-action@v2
+        with:
+          registry: https://artifactory.datapwn.com
+          username: sgandon
+          password: ${{ secrets.ARTIFACTORY_API_KEY }}
+           
+      - name: Helm tool installer
+        uses: Azure/setup-helm@v3.4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      # - name: install k3s
+      #   uses: rohan397/actions-k3s@fix/update-set-output 
+
+      # - name: Install helm repos
+      #   run: |
+      #     helm repo add confluentinc ${{ env.CONFLUENT_PUBLIC_HELM_URL}}
+      #     helm repo add bitnami ${{env.BITNAMI_PUBLIC_HELM_URL}}
+      #     helm repo add talend ${{ env.ARTIFACTORY_HELM_URL}} --username github-actions-stitch --password ${{ secrets.ARTIFACTORY_API_KEY }}
+
+      # - name: Fetch helm chart
+      #   run: |
+      #     helm fetch --untar talend/stitch-observability-service
+
+      # - name: Echo chart definition
+      #   run: |
+      #     chart_def=$(helm show chart ${{ env.HELM_GIT_PATH}})
+      #     echo "will install stitch-observability-service: \n
+      #     $chart_def"
+
+      # - name: Create secret
+      #   run: |
+      #     kubectl create namespace github-action-stitch # not sure why we need this but creating the secret fails without it
+      #     kubectl create secret docker-registry talend-registry \
+      #        --docker-server=artifactory.datapwn.com \
+      #        --docker-username=github-actions-stitch \
+      #        --docker-password=${{ secrets.ARTIFACTORY_API_KEY }}
+          
+      # - name: Create stack with candidate images
+      #   run: |
+      #     helm install stitch-observability-service ${{ env.HELM_GIT_PATH}} \
+      #               -f ${{ env.HELM_GIT_PATH}}/values-ci.yaml \
+      #               --wait --timeout 10m0s \
+      #               --set additionalEnvVars.normal.STITCH_OBSERVABILITY_DB_USER=avize \
+      #               --set additionalEnvVars.normal.STITCH_OBSERVABILITY_DB_PASSWORD=avize
+
+      # - name: Test image
+      #   run: |
+      #     helm test stitch-observability-service
+          
+      # - name: Show test logs
+      #   if: ${{ failure() }}
+      #   run: |
+      #     kubectl logs stitch-observability-service-partitions-test
+      #     kubectl logs stitch-observability-service-lein-test
+      - name: test wait
+        run: sleep 2040
